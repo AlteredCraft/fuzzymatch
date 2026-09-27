@@ -119,6 +119,8 @@ pub enum Error {
     UnknownOption(String),
     #[error("decider did not evaluate the guard for {0:?}")]
     MissingGuard(&'static str),
+    #[error("decider returned {name} = {value}, which is not a probability between 0 and 1")]
+    InvalidProbability { name: String, value: f64 },
 }
 
 /// A matcher that can't be built. Checked once, in [`MatcherBuilder::build`].
@@ -233,15 +235,21 @@ impl<B: Branches, D: Decider> Matcher<B, D> {
             .map(|(label, p)| Ok((self.parse(label)?.map(|arm| arm.branch), *p)))
             .collect::<Result<_, Error>>()?;
 
+        // NaN compares false against every threshold, so an unchecked NaN would fall through to
+        // `Matched`: a malformed answer must never be able to run a branch.
+        let confidence = checked_probability("confidence", decision.confidence)?;
         let (verdict, threshold, guard) = match self.parse(&decision.choice)? {
             None => (Verdict::NoMatch, self.default_confidence, None),
             Some(arm) => {
                 let guard = match &arm.guard_key {
-                    Some(key) => Some(*decision.guards.get(key).ok_or(Error::MissingGuard(arm.label))?),
+                    Some(key) => {
+                        let p = *decision.guards.get(key).ok_or(Error::MissingGuard(arm.label))?;
+                        Some(checked_probability(key, p)?)
+                    }
                     None => None,
                 };
                 let verdict = match guard {
-                    _ if decision.confidence < arm.min_confidence => Verdict::LowConfidence(arm.branch),
+                    _ if confidence < arm.min_confidence => Verdict::LowConfidence(arm.branch),
                     Some(p) if p < self.guard_threshold => Verdict::GuardFailed(arm.branch),
                     _ => Verdict::Matched(arm.branch),
                 };
@@ -359,6 +367,14 @@ impl<B: Branches> MatcherBuilder<B> {
             guards,
             default_confidence: self.min_confidence,
         })
+    }
+}
+
+fn checked_probability(name: &str, value: f64) -> Result<f64, Error> {
+    if (0.0..=1.0).contains(&value) {
+        Ok(value)
+    } else {
+        Err(Error::InvalidProbability { name: name.to_owned(), value })
     }
 }
 

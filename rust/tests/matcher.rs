@@ -148,6 +148,31 @@ fn missing_guard_is_an_error() {
 }
 
 #[test]
+fn rejects_confidence_that_is_not_a_probability() {
+    // NaN compares false against every threshold, so it must not slip through as a match.
+    for confidence in [f64::NAN, 1.5, -0.1] {
+        let result = support(choose(Intent::Refund, confidence)).classify("x");
+        assert!(
+            matches!(result, Err(Error::InvalidProbability { ref name, .. }) if name == "confidence"),
+            "{confidence}: {result:?}"
+        );
+    }
+}
+
+#[test]
+fn rejects_guard_probabilities_that_are_not_probabilities() {
+    for p in [f64::NAN, 1.5, -0.1] {
+        let decision =
+            choose(Guarded::Refund, 0.95).with_guard(Guarded::Refund, p).with_guard(Guarded::Vip, 0.9);
+        let result = Matcher::<Guarded, _>::new("?", ScriptedDecider::new(decision)).unwrap().classify("x");
+        assert!(
+            matches!(result, Err(Error::InvalidProbability { ref name, .. }) if name == "guard__Refund"),
+            "{p}: {result:?}"
+        );
+    }
+}
+
+#[test]
 fn observer_sees_every_decision() {
     let seen = Arc::new(Mutex::new(Vec::new()));
     let log = Arc::clone(&seen);
