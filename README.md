@@ -25,6 +25,9 @@ A Python `match` statement dispatches on the *shape* of a value. `fuzzymatch` di
 value *means*, and it keeps what makes `match` trustworthy: a fixed set of arms, guards, and a
 `case _` fallback.
 
+There is also a [Rust port](rust/README.md), where the branches are variants of your own enum and
+the compiler checks that every outcome is handled.
+
 > **Status: proof of concept.** The request and response mapping is tested through the real TypeSafe
 > SDK with only the HTTP layer mocked, but it has not yet been run against the live API. See
 > [Limits](#limits).
@@ -148,7 +151,7 @@ uv run pytest
 - `async` matchers on `AsyncTypeSafeClient`
 - an `escalate_to=` decider, so uncertain calls go to a frontier model automatically
 - a small tool that replays observer logs to suggest per-branch thresholds
-- nested matchers for hierarchical routing, and a TypeScript port
+- nested matchers for hierarchical routing, and a TypeScript port (a [Rust port](rust/README.md) exists)
 
 ## License
 
