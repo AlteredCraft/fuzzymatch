@@ -9,6 +9,7 @@ const SUITES := [
 	"res://tests/test_http_decider.gd",
 	"res://tests/test_world.gd",
 	"res://tests/test_parser.gd",
+	"res://tests/test_transcript.gd",
 ]
 
 var failures := 0
@@ -21,7 +22,12 @@ func _initialize() -> void:
 
 func _run() -> void:
 	for path in SUITES:
-		var suite: Object = load(path).new()
+		var script: GDScript = load(path)
+		if script == null or not script.can_instantiate():
+			failures += 1
+			print("FAIL %s does not compile" % path.get_file())
+			continue
+		var suite: Object = script.new()
 		for method in suite.get_method_list():
 			var name: String = method.name
 			if not name.begins_with("test_"):

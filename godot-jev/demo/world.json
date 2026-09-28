@@ -1,48 +1,90 @@
 {
-  "title": "The Cellar Door",
-  "start": "common_room",
+  "title": "The Sunken Crypt",
+  "start": "stairs",
   "rooms": {
-    "common_room": {
-      "title": "Common room",
-      "text": "A low room that smells of woodsmoke. A cold hearth fills one wall. Stairs lead down; a door stands to the east.",
-      "exits": { "down": { "to": "cellar" }, "east": { "to": "yard", "locked_until": "door_unlocked", "locked_text": "The east door is locked. The keyhole is old and large." } },
-      "items": ["lantern", "note"]
+    "stairs": {
+      "title": "Crypt stairs",
+      "text": "Worn steps lead down from a square of grey daylight, but the way back up has caved in behind you. A brazier smoulders beside an iron-bound arch to the north.",
+      "exits": { "north": { "to": "hall" } },
+      "items": ["torch"]
     },
-    "cellar": {
-      "title": "Cellar",
-      "text": "Barrels line the walls. Something glints on a shelf.",
+    "hall": {
+      "title": "Hall of pillars",
+      "text": "Cracked pillars hold up a vaulted ceiling. Passages open to the east and west. A skeleton in rusted mail stands guard before an archway to the north, its jaw clicking.",
+      "variants": [
+        {
+          "when": "skeleton_defeated",
+          "text": "Cracked pillars hold up a vaulted ceiling. Passages open to the east and west. Bones lie scattered before the archway to the north.",
+          "art": "hall_cleared"
+        }
+      ],
+      "exits": {
+        "south": { "to": "stairs" },
+        "east": { "to": "armory" },
+        "west": { "to": "ossuary" },
+        "north": { "to": "antechamber", "locked_until": "skeleton_defeated", "locked_text": "The skeleton steps into your path and raises a notched blade. It will not let you pass." }
+      },
+      "items": []
+    },
+    "armory": {
+      "title": "Armory",
+      "text": "Empty weapon racks line the walls. Most of what hung here rusted away long ago.",
+      "exits": { "west": { "to": "hall" } },
+      "items": ["sword", "vellum"]
+    },
+    "ossuary": {
+      "title": "Ossuary",
+      "text": "Skulls are stacked from floor to ceiling in neat rows. A stone altar stands at the far wall.",
       "dark": true,
-      "dark_text": "It is pitch black. You can hear water dripping somewhere.",
-      "exits": { "up": { "to": "common_room" } },
+      "dark_text": "It is pitch black. Something skitters away from your feet.",
+      "exits": { "east": { "to": "hall" } },
       "items": ["key"]
     },
-    "yard": {
-      "title": "Yard",
-      "text": "Cold air and open sky. The road east disappears into the hills. You've found your way out.",
-      "exits": { "west": { "to": "common_room" } },
+    "antechamber": {
+      "title": "Antechamber",
+      "text": "A narrow chamber ends in a door of black stone, fitted with a small silver lock.",
+      "exits": {
+        "south": { "to": "hall" },
+        "north": { "to": "vault", "locked_until": "door_unlocked", "locked_text": "The black door is locked. The lock is small and silver." }
+      },
       "items": []
+    },
+    "vault": {
+      "title": "Vault",
+      "text": "Gold coins spill from split chests, and a jeweled crown rests on a plinth. You've reached the heart of the crypt.",
+      "exits": { "south": { "to": "antechamber" } },
+      "items": ["crown"]
     }
   },
   "items": {
-    "lantern": { "name": "brass lantern", "text": "A brass lantern with a little oil left in it.", "takeable": true },
-    "note": { "name": "folded note", "text": "It reads: 'Spare key in the cellar. Bring a light.'", "takeable": true },
-    "key": { "name": "iron key", "text": "A heavy iron key, older than the door it opens.", "takeable": true }
+    "torch": { "name": "torch", "text": "A length of pitch-soaked wood, wrapped in rags at one end.", "takeable": true },
+    "sword": { "name": "notched shortsword", "text": "Old iron, still sharp along most of its edge.", "takeable": true },
+    "vellum": { "name": "scrap of vellum", "text": "Faded ink: 'The silver key rests with the dead, west of the hall. Bring fire.'", "takeable": true },
+    "key": { "name": "silver key", "text": "A small silver key, cold to the touch.", "takeable": true },
+    "crown": { "name": "jeweled crown", "text": "Gold set with rubies. Heavier than it looks.", "takeable": true }
   },
   "interactions": [
     {
-      "id": "light__lantern",
-      "text": "light the brass lantern",
-      "needs": { "holding": ["lantern"], "flag_unset": "lantern_lit" },
-      "sets": "lantern_lit",
-      "says": "The wick catches. Warm light spills out around you."
+      "id": "light__torch",
+      "text": "light the torch in the brazier",
+      "needs": { "holding": ["torch"], "in": "stairs", "flag_unset": "torch_lit" },
+      "sets": "torch_lit",
+      "says": "You hold the torch to the coals. It catches with a hiss and throws orange light across the stone."
+    },
+    {
+      "id": "attack__skeleton",
+      "text": "attack the skeleton with the shortsword",
+      "needs": { "holding": ["sword"], "in": "hall", "flag_unset": "skeleton_defeated" },
+      "sets": "skeleton_defeated",
+      "says": "You swing hard. The blade cracks through old bone, and the skeleton collapses across the floor. The archway north is clear."
     },
     {
       "id": "unlock__door",
-      "text": "unlock the east door with the iron key",
-      "needs": { "holding": ["key"], "in": "common_room", "flag_unset": "door_unlocked" },
+      "text": "unlock the black door with the silver key",
+      "needs": { "holding": ["key"], "in": "antechamber", "flag_unset": "door_unlocked" },
       "sets": "door_unlocked",
-      "says": "The key turns with a heavy clunk. The east door is unlocked."
+      "says": "The key turns with a soft click. The black door swings inward."
     }
   ],
-  "light_flag": "lantern_lit"
+  "light_flag": "torch_lit"
 }

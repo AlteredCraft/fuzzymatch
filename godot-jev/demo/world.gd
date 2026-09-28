@@ -1,6 +1,9 @@
 extends RefCounted
 ## The authored world: rooms, items, exits and interactions from JSON.
 ##
+## A room can list `variants`: the first whose `when` flag is set replaces
+## the room's text and art, so a room can change after the player acts.
+##
 ## Everything the player can do right now comes from `possible_actions()`,
 ## and everything the game says comes from `apply()`, which only returns
 ## text the author wrote. The model never invents a room, an item or a line.
@@ -10,6 +13,10 @@ var room: String
 var inventory: Array = []
 var flags: Dictionary = {}
 var room_items: Dictionary = {}  # room id -> Array of item ids (mutable copy)
+
+
+static func art_path(art_name: String) -> String:
+	return "res://demo/art/%s.png" % art_name
 
 
 static func from_file(path: String) -> Object:
@@ -32,6 +39,15 @@ func is_dark() -> bool:
 
 func visible_items() -> Array:
 	return [] if is_dark() else room_items[room]
+
+
+func exits() -> Array:
+	return data.rooms[room].exits.keys()
+
+
+## The art for the current room: its id, or the art of an active variant.
+func art() -> String:
+	return _variant().get("art", room)
 
 
 ## Every action available right now: [{id, text}]. Ids are `verb__object`.
@@ -96,7 +112,7 @@ func describe() -> String:
 	var r: Dictionary = data.rooms[room]
 	if is_dark():
 		return "%s\n%s" % [r.title, r.get("dark_text", "It is too dark to see.")]
-	var lines := ["%s\n%s" % [r.title, r.text]]
+	var lines := ["%s\n%s" % [r.title, _variant().get("text", r.text)]]
 	var items := visible_items()
 	if not items.is_empty():
 		lines.append("You see: %s." % ", ".join(items.map(func(i): return data.items[i].name)))
@@ -111,6 +127,13 @@ func state_for_model() -> Dictionary:
 		"visible": visible_items().map(func(i): return data.items[i].name),
 		"carrying": inventory.map(func(i): return data.items[i].name),
 	}
+
+
+func _variant() -> Dictionary:
+	for variant in data.rooms[room].get("variants", []):
+		if flags.has(variant.when):
+			return variant
+	return {}
 
 
 func _needs_met(needs: Dictionary) -> bool:

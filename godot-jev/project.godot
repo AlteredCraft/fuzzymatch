@@ -7,8 +7,8 @@ config_version=5
 
 [application]
 
-config/name="Jev Adventure"
-config/description="A text adventure whose parser understands anything the player types, but can only choose moves the author wrote."
+config/name="The Sunken Crypt"
+config/description="A dungeon crawl whose parser understands anything the player types, but can only choose moves the author wrote."
 run/main_scene="res://demo/adventure.tscn"
 config/features=PackedStringArray("4.7")
 
@@ -22,5 +22,7 @@ enabled=PackedStringArray("res://addons/jev/plugin.cfg")
 
 [display]
 
-window/size/viewport_width=960
-window/size/viewport_height=640
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
