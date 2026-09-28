@@ -1,0 +1,57 @@
+name: semver-judge
+description: Decide the next semantic version from the commits since the last tag, and flag the commits a human should decide.
+author: AlteredCraft
+
+inputs:
+  since:
+    description: Ref to compare from. Defaults to the latest tag.
+    required: false
+    default: ""
+  current:
+    description: Current version. Defaults to the `since` tag, else 0.0.0.
+    required: false
+    default: ""
+  model:
+    description: Pin a model version (recommended), e.g. jev-1.13.0. Defaults to jev-latest.
+    required: false
+    default: ""
+  offline:
+    description: "true: use Conventional Commits prefixes only, no model calls."
+    required: false
+    default: "false"
+  fail-on-review:
+    description: "true: fail the step when any commit needs a human decision."
+    required: false
+    default: "false"
+
+outputs:
+  bump:
+    description: none, patch, minor or major
+    value: ${{ steps.judge.outputs.bump }}
+  next-version:
+    description: The version to release next
+    value: ${{ steps.judge.outputs.next-version }}
+  needs-review:
+    description: "true when at least one commit could raise the bump and the model wasn't sure"
+    value: ${{ steps.judge.outputs.needs-review }}
+
+runs:
+  using: composite
+  steps:
+    - uses: astral-sh/setup-uv@v6
+    - id: judge
+      shell: bash
+      env:
+        INPUT_SINCE: ${{ inputs.since }}
+        INPUT_CURRENT: ${{ inputs.current }}
+        INPUT_MODEL: ${{ inputs.model }}
+        INPUT_OFFLINE: ${{ inputs.offline }}
+        INPUT_FAIL_ON_REVIEW: ${{ inputs.fail-on-review }}
+      run: |
+        args=(--github)
+        [ -n "$INPUT_SINCE" ] && args+=(--since "$INPUT_SINCE")
+        [ -n "$INPUT_CURRENT" ] && args+=(--current "$INPUT_CURRENT")
+        [ -n "$INPUT_MODEL" ] && args+=(--model "$INPUT_MODEL")
+        [ "$INPUT_OFFLINE" = "true" ] && args+=(--offline)
+        [ "$INPUT_FAIL_ON_REVIEW" = "true" ] && args+=(--fail-on-review)
+        uv run --quiet --project "${{ github.action_path }}" semver-judge --repo "$GITHUB_WORKSPACE" "${args[@]}"

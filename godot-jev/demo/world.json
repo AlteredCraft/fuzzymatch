@@ -1,0 +1,48 @@
+{
+  "title": "The Cellar Door",
+  "start": "common_room",
+  "rooms": {
+    "common_room": {
+      "title": "Common room",
+      "text": "A low room that smells of woodsmoke. A cold hearth fills one wall. Stairs lead down; a door stands to the east.",
+      "exits": { "down": { "to": "cellar" }, "east": { "to": "yard", "locked_until": "door_unlocked", "locked_text": "The east door is locked. The keyhole is old and large." } },
+      "items": ["lantern", "note"]
+    },
+    "cellar": {
+      "title": "Cellar",
+      "text": "Barrels line the walls. Something glints on a shelf.",
+      "dark": true,
+      "dark_text": "It is pitch black. You can hear water dripping somewhere.",
+      "exits": { "up": { "to": "common_room" } },
+      "items": ["key"]
+    },
+    "yard": {
+      "title": "Yard",
+      "text": "Cold air and open sky. The road east disappears into the hills. You've found your way out.",
+      "exits": { "west": { "to": "common_room" } },
+      "items": []
+    }
+  },
+  "items": {
+    "lantern": { "name": "brass lantern", "text": "A brass lantern with a little oil left in it.", "takeable": true },
+    "note": { "name": "folded note", "text": "It reads: 'Spare key in the cellar. Bring a light.'", "takeable": true },
+    "key": { "name": "iron key", "text": "A heavy iron key, older than the door it opens.", "takeable": true }
+  },
+  "interactions": [
+    {
+      "id": "light__lantern",
+      "text": "light the brass lantern",
+      "needs": { "holding": ["lantern"], "flag_unset": "lantern_lit" },
+      "sets": "lantern_lit",
+      "says": "The wick catches. Warm light spills out around you."
+    },
+    {
+      "id": "unlock__door",
+      "text": "unlock the east door with the iron key",
+      "needs": { "holding": ["key"], "in": "common_room", "flag_unset": "door_unlocked" },
+      "sets": "door_unlocked",
+      "says": "The key turns with a heavy clunk. The east door is unlocked."
+    }
+  ],
+  "light_flag": "lantern_lit"
+}

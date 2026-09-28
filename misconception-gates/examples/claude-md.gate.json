@@ -1,0 +1,34 @@
+{
+  "id": "d-claude-md",
+  "objective": "O2",
+  "q": "In your own words: why does a rule you put in CLAUDE.md apply to every turn of a Claude Code session?",
+  "correct": "Claude Code reads CLAUDE.md automatically when the session starts and keeps it in the context window, so the rule is in front of the model on every turn.",
+  "misconceptions": [
+    {
+      "key": "trains_model",
+      "label": "Believes CLAUDE.md trains, fine-tunes or permanently changes the model itself.",
+      "remedy": "beat-context-not-weights"
+    },
+    {
+      "key": "per_prompt",
+      "label": "Believes you must paste, mention or @-reference CLAUDE.md in each prompt for it to apply.",
+      "remedy": "beat-auto-load"
+    },
+    {
+      "key": "lasting_memory",
+      "label": "Believes Claude remembers CLAUDE.md like a person, across all projects and sessions, rather than reading it fresh at the start of each session.",
+      "remedy": "beat-fresh-each-session"
+    },
+    {
+      "key": "enforced_rule",
+      "label": "Believes CLAUDE.md rules are enforced like code or configuration, so the model cannot ignore them.",
+      "remedy": "beat-guidance-not-enforcement"
+    }
+  ],
+  "rubric": [
+    "Says it applies but gives no reason",
+    "Says the file is read or loaded, but not when or where it lives",
+    "Explains it is loaded into the context window at session start, so it is present on every turn"
+  ],
+  "why": "CLAUDE.md is loaded into the context window when a session starts. Every turn sees it because it is part of the context, not because the model learned it — which is also why a very long session or a conflicting instruction can crowd it out."
+}

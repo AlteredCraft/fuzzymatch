@@ -1,0 +1,31 @@
+[project]
+name = "semver-judge"
+version = "0.0.1"
+description = "Decide the next semantic version from the commits since the last tag, with calibrated confidence and a human gate for the unsure ones."
+readme = "README.md"
+license = "MIT"
+authors = [{ name = "Sam Keen", email = "sam.sjk@gmail.com" }]
+requires-python = ">=3.11"
+dependencies = ["typesafe-sdk>=0.7.2"]
+
+[project.scripts]
+semver-judge = "semver_judge.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.8.17,<0.9.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = ["pytest>=9.1.1", "ruff>=0.16.9"]
+
+[tool.ruff]
+line-length = 110
+
+[tool.ruff.format]
+exclude = ["*.md"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

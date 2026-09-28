@@ -1,0 +1,20 @@
+{"answer": "Claude Code loads CLAUDE.md into its context when the session starts, so it sees the rule every turn.", "label": "correct"}
+{"answer": "It gets read at the beginning and stays in the context window the whole session.", "label": "correct"}
+{"answer": "Because the file is automatically included in what the model reads at startup, so each response is generated with it in view.", "label": "correct"}
+{"answer": "It's part of the prompt context from the start of the session.", "label": "correct"}
+{"answer": "CLAUDE.md fine-tunes Claude on your project so it learns your rules.", "label": "trains_model"}
+{"answer": "Writing rules there updates the model's weights for your repo.", "label": "trains_model"}
+{"answer": "It retrains the AI so the rule becomes part of how it thinks.", "label": "trains_model"}
+{"answer": "You reference it with @CLAUDE.md in your message and then it follows it.", "label": "per_prompt"}
+{"answer": "Each time you ask something you have to include the file so Claude sees it.", "label": "per_prompt"}
+{"answer": "It only works if you tell Claude to read CLAUDE.md at the start of each prompt.", "label": "per_prompt"}
+{"answer": "Claude remembers it forever once you've written it, even in other projects.", "label": "lasting_memory"}
+{"answer": "It's saved into Claude's long-term memory so it knows it from then on.", "label": "lasting_memory"}
+{"answer": "The rules are enforced by Claude Code like a config file, so the model can't break them.", "label": "enforced_rule"}
+{"answer": "It works like a linter config — the tool blocks anything that violates the rule.", "label": "enforced_rule"}
+{"answer": "Because Claude is smart and pays attention to files in the repo.", "label": "other"}
+{"answer": "The rule is stored on Anthropic's servers and checked on every request.", "label": "other"}
+{"answer": "idk", "label": "no_attempt"}
+{"answer": "what's for lunch", "label": "no_attempt"}
+{"answer": "It's loaded into context at startup, and it also permanently teaches the model your style.", "label": "correct", "alsoHolds": ["trains_model"]}
+{"answer": "Claude reads it when the session begins, but you still need to @-mention it for it to count.", "label": "per_prompt"}

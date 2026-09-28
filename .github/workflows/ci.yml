@@ -6,35 +6,65 @@ on:
   pull_request:
 
 jobs:
-  test:
+  misconception-gates:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.11", "3.12", "3.13"]
+    defaults:
+      run:
+        working-directory: misconception-gates
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --test
+
+  godot-jev:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: godot-jev
+    env:
+      GODOT_VERSION: 4.7.2
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: ~/godot
+          key: godot-${{ env.GODOT_VERSION }}
+      - name: Install Godot
+        run: |
+          if [ ! -x ~/godot/godot ]; then
+            mkdir -p ~/godot
+            curl -sSL -o /tmp/godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+            unzip -q /tmp/godot.zip -d ~/godot
+            mv ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 ~/godot/godot
+          fi
+      - run: timeout 300 ~/godot/godot --headless --path . --import
+      - run: timeout 300 ~/godot/godot --headless --path . --script res://tests/run_tests.gd
+
+  semver-judge:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: semver-judge
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
-        with:
-          python-version: ${{ matrix.python-version }}
       - run: uv sync --locked
       - run: uv run ruff check .
       - run: uv run ruff format --check .
       - run: uv run pytest -q
 
-  rust:
+  semver-judge-action:
+    # Runs the composite action on this repo's own history, offline, to check its wiring.
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: rust
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
         with:
-          components: clippy, rustfmt
-      - uses: Swatinem/rust-cache@v2
+          fetch-depth: 0
+      - id: version
+        uses: ./semver-judge
         with:
-          workspaces: rust
-      - run: cargo fmt --check
-      - run: cargo clippy --locked --all-targets -- -D warnings
-      - run: cargo clippy --locked --no-default-features -- -D warnings
-      - run: cargo test --locked
+          offline: "true"
+      - run: 'echo "bump=${{ steps.version.outputs.bump }} next=${{ steps.version.outputs.next-version }} review=${{ steps.version.outputs.needs-review }}"'
+      - run: test -n "${{ steps.version.outputs.next-version }}"

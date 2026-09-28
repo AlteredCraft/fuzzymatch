@@ -1,0 +1,26 @@
+; Engine configuration file.
+; Godot 4.7. Open this folder in the editor, or run headless tests:
+;   godot --headless --path . --import
+;   godot --headless --path . --script res://tests/run_tests.gd
+
+config_version=5
+
+[application]
+
+config/name="Jev Adventure"
+config/description="A text adventure whose parser understands anything the player types, but can only choose moves the author wrote."
+run/main_scene="res://demo/adventure.tscn"
+config/features=PackedStringArray("4.7")
+
+[autoload]
+
+Jev="*res://addons/jev/jev.gd"
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/jev/plugin.cfg")
+
+[display]
+
+window/size/viewport_width=960
+window/size/viewport_height=640

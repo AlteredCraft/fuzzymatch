@@ -1,0 +1,15 @@
+{
+  "name": "misconception-gates",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Diagnose which misconception a free-text answer shows, with calibrated confidence. Built for js-animation-sandbox gates.",
+  "type": "module",
+  "engines": {
+    "node": ">=22.5"
+  },
+  "scripts": {
+    "test": "node --test",
+    "demo": "node examples/demo.mjs",
+    "eval": "node eval/run.mjs"
+  }
+}
