@@ -51,6 +51,13 @@ in that room at that moment.
 
 ## The screen
 
+The game opens on a start menu over the crypt stairs: **Enter the crypt**, **Help** and **Quit**,
+with a line saying whether Jev is listening (and which model) or offline for want of
+`TYPESAFE_API_KEY`. Help is a scrolling page on what the experiment is about: the problem, how the
+Choice over possible moves works, the act and clarify thresholds (read from the parser, not
+written into the text), the hypothesis, and how to read the screen below. Back or Esc returns to
+the menu.
+
 | Area | What it shows |
 | --- | --- |
 | Room art (top left) | A 160×90 pixel scene for the current room, scaled 4×. It fades between rooms, drops to near-black in a dark room without light, and switches to a room's variant art once the variant's flag is set (the hall after the skeleton falls). The room's name sits on a plaque in the corner. |
@@ -118,11 +125,14 @@ don't need separate art; the scene dims the room's image at runtime.
 | `demo/world.json` | The authored dungeon: 6 rooms, 5 items, 3 interactions |
 | `demo/world.gd` | Rules: possible actions, room variants, and authored responses only |
 | `demo/parser.gd` | Player text to one possible action, gated by confidence |
+| `demo/start_menu.gd` | The start menu (the main scene) and its help page |
+| `demo/help.gd` | BBCode for the help page, and the menu's Jev status line |
 | `demo/adventure.gd` | The playable scene: art, status panel, transcript and input |
+| `demo/style.gd` | Palette, fonts, framed panels and theme shared by the menu and the game |
 | `demo/transcript.gd` | BBCode for the transcript; escapes all authored and typed text |
 | `demo/art/`, `demo/fonts/` | Room images and the two pixel fonts |
 | `tools/paint_rooms.gd` | Regenerates the placeholder room art |
-| `tests/` | A headless runner and 29 tests; a script error inside a test counts as a failure |
+| `tests/` | A headless runner and 34 tests; a script error inside a test counts as a failure |
 
 Using the add-on in any game:
 
@@ -157,7 +167,7 @@ the game stays fully authored, and it's fast enough to feel like a parser, not a
 
 ```bash
 export TYPESAFE_API_KEY=sk-...        # read by the Jev autoload; local prototyping only
-godot --path .                        # play
+godot --path .                        # play (opens the start menu)
 godot --headless --path . --import
 godot --headless --path . --script res://tests/run_tests.gd
 ```

@@ -6,8 +6,8 @@ extends Control
 const World := preload("res://demo/world.gd")
 const Parser := preload("res://demo/parser.gd")
 const Transcript := preload("res://demo/transcript.gd")
-const BODY_FONT := preload("res://demo/fonts/VT323-Regular.ttf")
-const TITLE_FONT := preload("res://demo/fonts/PixelifySans.ttf")
+const Style := preload("res://demo/style.gd")
+const TITLE_FONT := Style.TITLE_FONT
 
 const NOT_UNDERSTOOD := [
 	"You're not sure how to do that here.",
@@ -15,13 +15,11 @@ const NOT_UNDERSTOOD := [
 	"You hesitate. That doesn't seem possible right now.",
 ]
 const REVEAL_CHARS_PER_S := 160.0
-const BG := Color("0b0910")
-const PANEL := Color("16121c")
-const EDGE := Color("7a6038")
-const EDGE_DARK := Color("2a2130")
-const INK := Color("e8dcc0")
-const DIM := Color("8d82a3")
-const GOLD := Color("f0b85a")
+const PANEL := Style.PANEL
+const EDGE := Style.EDGE
+const EDGE_DARK := Style.EDGE_DARK
+const DIM := Style.DIM
+const GOLD := Style.GOLD
 const DARKNESS := Color(0.05, 0.045, 0.07)
 
 var world: Object
@@ -50,10 +48,7 @@ var details_text: RichTextLabel
 
 
 func _ready() -> void:
-	for font: FontFile in [BODY_FONT, TITLE_FONT]:
-		font.antialiasing = TextServer.FONT_ANTIALIASING_NONE
-		font.hinting = TextServer.HINTING_NONE
-		font.subpixel_positioning = TextServer.SUBPIXEL_POSITIONING_DISABLED
+	Style.crisp_fonts()
 	world = World.from_file("res://demo/world.json")
 	parser = Parser.new(Jev)
 	_build_ui()
@@ -248,9 +243,9 @@ func _finish_reveal() -> void:
 # --- layout -------------------------------------------------------------------------
 
 func _build_ui() -> void:
-	theme = _theme()
+	theme = Style.theme()
 	var bg := ColorRect.new()
-	bg.color = BG
+	bg.color = Style.BG
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
 
@@ -265,11 +260,11 @@ func _build_ui() -> void:
 	var left := VBoxContainer.new()
 	left.add_theme_constant_override("separation", 14)
 	row.add_child(left)
-	left.add_child(_framed(_art_view()))
-	var hud := _framed(_hud())
+	left.add_child(Style.framed(_art_view()))
+	var hud := Style.framed(_hud())
 	hud.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	left.add_child(hud)
-	var text_box := _framed(_text_panel())
+	var text_box := Style.framed(_text_panel())
 	text_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(text_box)
 	add_child(_details_popup())
@@ -278,7 +273,7 @@ func _build_ui() -> void:
 func _details_popup() -> PopupPanel:
 	details = PopupPanel.new()
 	details.theme = theme
-	details.add_theme_stylebox_override("panel", _box(PANEL, GOLD, 2, Vector4.ONE * 14))
+	details.add_theme_stylebox_override("panel", Style.box(PANEL, GOLD, 2, Vector4.ONE * 14))
 	details.popup_hide.connect(func(): input.grab_focus())
 	details_text = RichTextLabel.new()
 	details_text.bbcode_enabled = true
@@ -298,7 +293,7 @@ func _art_view() -> Control:
 	art.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	holder.add_child(art)
 	var tag := PanelContainer.new()
-	tag.add_theme_stylebox_override("panel", _box(Color(PANEL, 0.85), EDGE, 2, Vector4(10, 2, 10, 4)))
+	tag.add_theme_stylebox_override("panel", Style.box(Color(PANEL, 0.85), EDGE, 2, Vector4(10, 2, 10, 4)))
 	tag.position = Vector2(12, 12)
 	plaque = Label.new()
 	plaque.add_theme_font_override("font", TITLE_FONT)
@@ -403,54 +398,6 @@ func _caption(text: String) -> Label:
 	label.add_theme_font_size_override("font_size", 14)
 	label.add_theme_color_override("font_color", EDGE)
 	return label
-
-
-## A double border: a dark outer line around a brass inner line.
-func _framed(content: Control) -> PanelContainer:
-	var outer := PanelContainer.new()
-	outer.add_theme_stylebox_override("panel", _box(EDGE_DARK, BG, 2, Vector4.ONE * 2))
-	var inner := PanelContainer.new()
-	inner.add_theme_stylebox_override("panel", _box(PANEL, EDGE, 2, Vector4.ONE * 12))
-	inner.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	outer.add_child(inner)
-	inner.add_child(content)
-	return outer
-
-
-func _box(fill: Color, border: Color, width: int, padding: Vector4) -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = fill
-	style.border_color = border
-	style.set_border_width_all(width)
-	style.content_margin_left = padding.x
-	style.content_margin_top = padding.y
-	style.content_margin_right = padding.z
-	style.content_margin_bottom = padding.w
-	return style
-
-
-func _theme() -> Theme:
-	var t := Theme.new()
-	t.default_font = BODY_FONT
-	t.default_font_size = 22
-	t.set_color("font_color", "Label", INK)
-	t.set_color("default_color", "RichTextLabel", INK)
-	t.set_color("selection_color", "RichTextLabel", Color(EDGE, 0.5))
-	t.set_color("font_color", "LineEdit", INK)
-	t.set_color("font_placeholder_color", "LineEdit", Color(DIM, 0.7))
-	t.set_color("caret_color", "LineEdit", GOLD)
-	t.set_constant("caret_width", "LineEdit", 2)
-	t.set_font_size("normal_font_size", "RichTextLabel", 22)
-	t.set_font("normal_font", "RichTextLabel", BODY_FONT)
-	t.set_constant("line_separation", "RichTextLabel", 2)
-	for state in ["normal", "focus", "read_only"]:
-		t.set_stylebox(state, "LineEdit", StyleBoxEmpty.new())
-	var scroll := _box(EDGE_DARK, EDGE_DARK, 0, Vector4.ZERO)
-	t.set_stylebox("scroll", "VScrollBar", _box(Color(0, 0, 0, 0), EDGE_DARK, 0, Vector4.ONE * 2))
-	t.set_stylebox("grabber", "VScrollBar", scroll)
-	t.set_stylebox("grabber_highlight", "VScrollBar", _box(EDGE, EDGE, 0, Vector4.ZERO))
-	t.set_stylebox("grabber_pressed", "VScrollBar", _box(EDGE, EDGE, 0, Vector4.ZERO))
-	return t
 
 
 ## The last answer's confidence, with ticks at the clarify and act thresholds.
