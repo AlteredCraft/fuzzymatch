@@ -9,7 +9,7 @@ config_version=5
 
 config/name="The Sunken Crypt"
 config/description="A dungeon crawl whose parser understands anything the player types, but can only choose moves the author wrote."
-run/main_scene="res://demo/adventure.tscn"
+run/main_scene="res://demo/start_menu.tscn"
 config/features=PackedStringArray("4.7")
 
 [autoload]
