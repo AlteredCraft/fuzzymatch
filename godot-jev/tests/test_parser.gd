@@ -76,3 +76,22 @@ func test_more_than_254_actions_asks_for_the_verb_first() -> void:
 	eq(fake.calls.size(), 2)
 	eq(fake.calls[1].questions.action.criteria.size(), 151)  # 150 examine actions + none
 	eq(result.action, "examine__thing7")
+	eq(result.stats.calls, 2)
+	eq(result.stats.offered, 151)
+
+
+func test_results_carry_stats_for_the_turn() -> void:
+	var w := World.from_file("res://demo/world.json")
+	var probs := {"take__torch": 0.9, "examine__torch": 0.06, "go__north": 0.03, Parser.NONE: 0.01}
+	var result: Dictionary = await _parser_answering("take__torch", 0.88, probs).parse("grab it", w)
+	eq(result.stats.model, "scripted")
+	eq(result.stats.offered, w.possible_actions().size() + 1)
+	eq(result.stats.calls, 1)
+	eq(result.stats.ranked, [["take__torch", 0.9], ["examine__torch", 0.06], ["go__north", 0.03]])
+
+
+func test_errors_carry_stats_too() -> void:
+	var w := World.from_file("res://demo/world.json")
+	var result: Dictionary = await Parser.new(Scripted.new(func(_s, _q): return {"error": "offline"})).parse("go", w)
+	eq(result.stats.calls, 1)
+	eq(result.stats.ranked, [])

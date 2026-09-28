@@ -25,22 +25,40 @@ func _init(a_decider: Object) -> void:
 	decider = a_decider
 
 
-## Returns {kind: "act"|"clarify"|"unknown"|"error", action?, options?, confidence?, reason?}.
+## Returns {kind: "act"|"clarify"|"unknown"|"error", action?, options?, confidence?, reason?, stats}.
+## `stats` describes the turn for display: {model, offered, calls, ranked},
+## where `ranked` is the top three [label, probability] of the last question.
 func parse(typed: String, world: Object) -> Dictionary:
 	var actions: Array = world.possible_actions()
 	var state: Dictionary = world.state_for_model()
 	state["player_typed"] = typed
+	var calls := 0
 
 	if actions.size() > MAX_ACTIONS:
+		calls += 1
 		var verb := await _pick_verb(state, actions)
 		if verb.has("error") or verb.get("kind") == "unknown":
+			verb["stats"] = _stats(verb.get("out", {}), verb.get("offered", 0), calls)
+			verb.erase("out")
+			verb.erase("offered")
 			return verb
 		actions = actions.filter(func(a): return a.id.begins_with(verb.verb + "__"))
 
-	var out: Dictionary = await decider.decide(state, {"action": _action_question(actions)})
+	var question := _action_question(actions)
+	calls += 1
+	var out: Dictionary = await decider.decide(state, {"action": question})
+	var stats := _stats(out, question.criteria.size(), calls)
 	if out.has("error"):
-		return {"kind": "error", "reason": out.error}
-	return _resolve(out.answers.action, actions)
+		return {"kind": "error", "reason": out.error, "stats": stats}
+	var result := _resolve(out.answers.action, actions)
+	result["stats"] = stats
+	return result
+
+
+func _stats(out: Dictionary, offered: int, calls: int) -> Dictionary:
+	var answers: Dictionary = out.get("answers", {})
+	var ranked: Array = JevQ.ranked(answers.values()[0]).slice(0, 3) if not answers.is_empty() else []
+	return {"model": out.get("model", ""), "offered": offered, "calls": calls, "ranked": ranked}
 
 
 func _action_question(actions: Array) -> Dictionary:
@@ -80,8 +98,8 @@ func _pick_verb(state: Dictionary, actions: Array) -> Dictionary:
 	examples[NONE] = "None of these kinds of action."
 	var out: Dictionary = await decider.decide(state, {"verb": JevQ.choice("What kind of action is the player asking for?", examples)})
 	if out.has("error"):
-		return {"kind": "error", "reason": out.error}
+		return {"kind": "error", "reason": out.error, "out": out, "offered": examples.size()}
 	var answer: Dictionary = out.answers.verb
 	if answer.choice == NONE or answer.confidence < clarify_confidence:
-		return {"kind": "unknown", "confidence": answer.confidence}
+		return {"kind": "unknown", "confidence": answer.confidence, "out": out, "offered": examples.size()}
 	return {"verb": answer.choice}

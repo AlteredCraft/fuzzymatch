@@ -22,12 +22,12 @@ const EDGE_DARK := Color("2a2130")
 const INK := Color("e8dcc0")
 const DIM := Color("8d82a3")
 const GOLD := Color("f0b85a")
-const KIND_COLORS := {"act": Color("b9c98f"), "clarify": Color("7fd0e0"), "unknown": Color("9b8f80"), "error": Color("e8894a")}
 const DARKNESS := Color(0.05, 0.045, 0.07)
 
 var world: Object
 var parser: Object
 var pending: Array = []  # clarification options awaiting "1" or "2"
+var turns: Array = []  # one entry per question to Jev, opened from the transcript
 var history: Array = []
 var history_index := 0
 var thinking := false
@@ -45,6 +45,8 @@ var meter: ConfidenceMeter
 var log_view: RichTextLabel
 var input: LineEdit
 var status: Label
+var details: PopupPanel
+var details_text: RichTextLabel
 
 
 func _ready() -> void:
@@ -89,6 +91,7 @@ func _on_submit(text: String) -> void:
 	var result: Dictionary = await parser.parse(text, world)
 	var elapsed := Time.get_ticks_msec() - started
 	_set_thinking(false)
+	_record_turn(text, result, elapsed, texts)
 	_show_decision(result, elapsed, texts)
 	match result.kind:
 		"act":
@@ -114,8 +117,41 @@ func _act(action_id: String) -> void:
 	_refresh()
 
 
-func _on_option_clicked(meta: Variant) -> void:
-	var number := int(str(meta))
+## Continues the player's line with a link to this turn's details. Nothing
+## else is appended while Jev decides, so the player's line is still last.
+func _record_turn(typed: String, result: Dictionary, elapsed_ms: int, texts: Dictionary) -> void:
+	turns.append({
+		"number": turns.size() + 1, "typed": typed, "kind": result.kind, "action": result.get("action", ""),
+		"confidence": result.get("confidence", 0.0), "options": result.get("options", []),
+		"reason": result.get("reason", ""), "ms": elapsed_ms, "stats": result.stats, "texts": texts,
+	})
+	_finish_reveal()
+	log_view.append_text(Transcript.turn_tag(turns.size(), result.kind, result.get("confidence", 0.0)))
+
+
+func _on_link_clicked(meta: Variant) -> void:
+	var link := str(meta)
+	var number := int(link.get_slice(":", 1))
+	if link.begins_with("option:"):
+		_on_option_clicked(number)
+	elif link.begins_with("turn:") and number >= 1 and number <= turns.size():
+		_show_turn(turns[number - 1])
+
+
+func _show_turn(turn: Dictionary) -> void:
+	if details.visible:
+		details.hide()
+		await get_tree().process_frame  # a popup reopened in the frame it closed stays hidden
+	details_text.text = Transcript.turn_details(turn, parser.clarify_confidence, parser.act_confidence)
+	details.reset_size()
+	var viewport := get_viewport_rect().size
+	var at := get_global_mouse_position() + Vector2(12, 12)
+	at.x = clampf(at.x, 16, viewport.x - details.size.x - 16)
+	at.y = clampf(at.y, 16, viewport.y - details.size.y - 16)
+	details.popup(Rect2i(Vector2i(at), details.size))
+
+
+func _on_option_clicked(number: int) -> void:
 	if thinking or number < 1 or number > pending.size():
 		return
 	_finish_reveal()
@@ -174,7 +210,7 @@ func _refresh() -> void:
 func _show_decision(result: Dictionary, elapsed_ms: int, texts: Dictionary) -> void:
 	var kind: String = result.kind
 	jev_kind.text = kind.to_upper()
-	jev_kind.add_theme_color_override("font_color", KIND_COLORS[kind])
+	jev_kind.add_theme_color_override("font_color", Color(Transcript.KIND[kind]))
 	match kind:
 		"act":
 			jev_heard.text = texts.get(result.action, result.action)
@@ -184,7 +220,7 @@ func _show_decision(result: Dictionary, elapsed_ms: int, texts: Dictionary) -> v
 			jev_heard.text = "no possible move"
 		"error":
 			jev_heard.text = "offline"
-	meter.set_value(result.get("confidence", 0.0), KIND_COLORS[kind])
+	meter.set_value(result.get("confidence", 0.0), Color(Transcript.KIND[kind]))
 	if kind == "error":
 		jev_detail.text = "set TYPESAFE_API_KEY"
 	else:
@@ -236,6 +272,20 @@ func _build_ui() -> void:
 	var text_box := _framed(_text_panel())
 	text_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(text_box)
+	add_child(_details_popup())
+
+
+func _details_popup() -> PopupPanel:
+	details = PopupPanel.new()
+	details.theme = theme
+	details.add_theme_stylebox_override("panel", _box(PANEL, GOLD, 2, Vector4.ONE * 14))
+	details.popup_hide.connect(func(): input.grab_focus())
+	details_text = RichTextLabel.new()
+	details_text.bbcode_enabled = true
+	details_text.fit_content = true
+	details_text.custom_minimum_size.x = 440
+	details.add_child(details_text)
+	return details
 
 
 func _art_view() -> Control:
@@ -272,7 +322,7 @@ func _hud() -> Control:
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	place.add_child(spacer)
 	var keys := Label.new()
-	keys.text = "Enter to act\n↑ ↓ for earlier commands\nclick an option to choose it"
+	keys.text = "Enter to act\n↑ ↓ for earlier commands\nclick the score after a command\nto see what Jev weighed"
 	keys.add_theme_color_override("font_color", Color(DIM, 0.8))
 	place.add_child(keys)
 
@@ -310,7 +360,7 @@ func _text_panel() -> Control:
 	log_view.selection_enabled = true
 	log_view.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	log_view.meta_underlined = true
-	log_view.meta_clicked.connect(_on_option_clicked)
+	log_view.meta_clicked.connect(_on_link_clicked)
 	box.add_child(log_view)
 	var rule := ColorRect.new()
 	rule.color = EDGE_DARK

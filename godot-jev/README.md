@@ -54,8 +54,9 @@ in that room at that moment.
 | Area | What it shows |
 | --- | --- |
 | Room art (top left) | A 160×90 pixel scene for the current room, scaled 4×. It fades between rooms, drops to near-black in a dark room without light, and switches to a room's variant art once the variant's flag is set (the hall after the skeleton falls). The room's name sits on a plaque in the corner. |
-| Status panel (bottom left) | Exits and what you're carrying, plus **Jev heard**: the last outcome (act, clarify, unknown, or error when the API is unreachable), the action it chose, a confidence meter with ticks at the clarify (0.40) and act (0.75) thresholds, and the turn's latency. It's there to make the experiment visible while playing. |
+| Status panel (bottom left) | Exits and what you're carrying, plus **Jev heard**: the latest outcome (act, clarify, unknown, or error when the API is unreachable), the action it chose, a confidence meter with ticks at the clarify (0.40) and act (0.75) thresholds, and the turn's latency. It's there to make the experiment visible while playing. |
 | Transcript (right) | Room names as headings, your commands echoed in muted text, item lines highlighted, and new text revealed a few characters at a time. Clarify options are links: click one, or type 1 or 2. |
+| Turn scores | Each command Jev answered ends with its outcome and confidence (`act 0.94`, `clarify 0.52`, `offline`). Click one to open that turn's card: what you typed, the outcome and move, confidence against the thresholds, latency, how many options were offered, API calls, the model, and the top three candidates with their probabilities. Esc or a click elsewhere closes it. |
 | Input | Enter submits; ↑ and ↓ recall earlier commands. The input is locked while Jev is deciding. |
 
 The layout is 1280×720 and scales with the window (`canvas_items` stretch). The fonts are
@@ -121,7 +122,7 @@ don't need separate art; the scene dims the room's image at runtime.
 | `demo/transcript.gd` | BBCode for the transcript; escapes all authored and typed text |
 | `demo/art/`, `demo/fonts/` | Room images and the two pixel fonts |
 | `tools/paint_rooms.gd` | Regenerates the placeholder room art |
-| `tests/` | A headless runner and 25 tests |
+| `tests/` | A headless runner and 29 tests; a script error inside a test counts as a failure |
 
 Using the add-on in any game:
 
