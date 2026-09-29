@@ -6,6 +6,7 @@ const Style := preload("res://demo/style.gd")
 const Help := preload("res://demo/help.gd")
 const Parser := preload("res://demo/parser.gd")
 const World := preload("res://demo/world.gd")
+const RoomFx := preload("res://demo/room_fx.gd")
 const GAME := "res://demo/adventure.tscn"
 const BACKDROP := "stairs"
 const TAGLINE := "Type anything. Only what the author wrote can happen."
@@ -32,8 +33,16 @@ func _ready() -> void:
 	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	art.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	art.modulate = Color(0.35, 0.32, 0.4)
+	art.modulate = Color(0.5, 0.45, 0.55)
+	art.material = RoomFx.material()
 	add_child(art)
+	var screen := get_viewport_rect().size
+	var art_size := art.texture.get_size()
+	var pixel := maxf(screen.x / art_size.x, screen.y / art_size.y)  # the art covers the screen
+	var embers := RoomFx.embers(RoomFx.ember_sources(art.texture.get_image()), pixel)
+	embers.position = (screen - art_size * pixel) / 2.0
+	embers.modulate = Color(1, 1, 1, 0.6)
+	add_child(embers)
 	title_view = _title_view()
 	add_child(title_view)
 	help_view = _help_view()
@@ -77,6 +86,8 @@ func _title_view() -> Control:
 	title.add_theme_color_override("font_shadow_color", Style.BG)
 	title.add_theme_constant_override("shadow_offset_x", 4)
 	title.add_theme_constant_override("shadow_offset_y", 4)
+	title.add_theme_color_override("font_outline_color", Style.BG)
+	title.add_theme_constant_override("outline_size", 12)
 	column.add_child(title)
 	var tagline := Label.new()
 	tagline.text = TAGLINE
