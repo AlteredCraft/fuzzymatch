@@ -16,3 +16,6 @@ node_modules/
 misconception-gates/eval/results-*.json
 
 .DS_Store
+
+# Temporary 2x window for recording a trailer (see godot-jev/README.md)
+godot-jev/override.cfg

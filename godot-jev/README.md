@@ -131,7 +131,7 @@ don't need separate art; the scene dims the room's image at runtime.
 
 | Path | Role |
 | --- | --- |
-| `addons/jev/` | The add-on: `Jev` autoload, `http_decider.gd` (HTTPRequest to the REST API), `jev_q.gd` (question builders), `scripted_decider.gd` (tests and offline play) |
+| `addons/jev/` | The add-on: `Jev` autoload, `http_decider.gd` (HTTPRequest to the REST API, polled on a thread), `jev_q.gd` (question builders), `scripted_decider.gd` (tests and offline play) |
 | `demo/world.json` | The authored dungeon: 6 rooms, 5 items, 3 interactions |
 | `demo/world.gd` | Rules: possible actions, room variants, and authored responses only |
 | `demo/parser.gd` | Player text to one possible action, gated by confidence |
@@ -143,7 +143,10 @@ don't need separate art; the scene dims the room's image at runtime.
 | `demo/transcript.gd` | BBCode for the transcript; escapes all authored and typed text |
 | `demo/art/`, `demo/fonts/` | Room images and the two pixel fonts |
 | `tools/paint_rooms.gd` | Regenerates the placeholder room art |
-| `tests/` | A headless runner and 40 tests; a script error inside a test counts as a failure |
+| `tools/session.gd` | A scripted player: 16 lines that solve the dungeon, typed at a human pace |
+| `tools/record_session.gd` | Plays `session.gd` under Movie Maker to record a video, or rehearses it headless |
+| `tools/trailer.py` | Cuts a short trailer, with zooms, captions and spotlights, from a 2× recording |
+| `tests/` | A headless runner and 50 tests; a script error inside a test counts as a failure |
 
 Using the add-on in any game:
 
@@ -169,7 +172,10 @@ the game stays fully authored, and it's fast enough to feel like a parser, not a
    indirect requests), ≥ 90% resolve to the intended action or a clarify that contains it, and
    ≥ 90% of impossible or off-topic inputs resolve to `unknown`.
 2. **Speed.** p95 ≤ 500 ms per turn from input to response. The status panel shows each turn's
-   latency; the corpus eval should record it.
+   latency; the corpus eval should record it. In the recorded session (16 turns, `jev-latest`,
+   2026-09-29) every turn took 197–300 ms. The HTTPRequest runs on a thread: polled on the main
+   thread it only advanced once per frame, which added about 170 ms per turn at 30 fps and 45 ms
+   at 60 fps.
 3. **Nothing invented.** The options offered are exactly the possible actions plus `none`, for
    every state of the demo. `[pass]` by construction: `test_options_are_exactly_the_possible_actions_plus_none`.
 4. **Shippable.** An exported build works with no key in the client, through a small proxy.
@@ -184,6 +190,50 @@ godot --headless --path . --script res://tests/run_tests.gd
 ```
 
 Without a key the game still runs, but every turn reports that the parser is offline.
+
+## Recording a session
+
+`tools/session.gd` plays the dungeon from the start menu to the crown in 16 lines of Snoop Dogg
+slang ("roll on up north, cuz", "lay the smack down on Mr. Bones wit the blade"). The first,
+"ayo where the gin and juice at, nephew?", asks for something the author never wrote and should
+come back `unknown`. Each line names the move it means, so the session can check itself:
+
+- It types about eight keys a second with a beat at each new word, then waits for Jev and for the
+  transcript to finish revealing, and pauses 1.5–7 s to read, longer for more text.
+- A clarify is answered with the intended option. An `unknown` is retried once in the option's own
+  words ("go north"). A wrong move stops the session and exits 1, since the rest of the route no
+  longer applies.
+
+Rehearse against the live API first (headless, no pauses), then record with Movie Maker:
+
+```bash
+godot --headless --path . --script res://tools/record_session.gd -- --rehearse
+godot --path . --write-movie session.avi --fixed-fps 30 --script res://tools/record_session.gd
+ffmpeg -i session.avi -an -c:v libx264 -crf 18 -pix_fmt yuv420p -movflags +faststart session.mp4
+```
+
+Both print each turn (what was typed, outcome, move, confidence, latency). A recording runs in
+real time, about four minutes: Movie Maker renders as fast as it can, so the script holds the game
+clock to the wall clock to keep each wait on Jev as long as it really was. The window can be
+covered or minimized. macOS stops drawing a hidden window, and Movie Maker would then repeat the
+last frame while play went on, so the script draws those frames itself. Don't type or click in it.
+
+Every text entered is also logged as `mark <frame> typing|enter|shown <text>`, the frames where
+typing starts, Enter is pressed, and the answer has finished revealing. `tools/trailer.py` uses
+them to cut a 1920×1080 trailer: the gin line and the skeleton line, typing sped up 1.7×, eased
+zooms onto the input, spotlights on each result and on the Jev panel, captions, and an end card.
+It zooms to about 2×, so record at 2560×1440 for it, with a temporary `override.cfg` (gitignored)
+that doubles the window without changing the layout:
+
+```bash
+printf '[display]\n\nwindow/size/window_width_override=2560\nwindow/size/window_height_override=1440\n' > override.cfg
+godot --path . --write-movie session.avi --fixed-fps 30 --script res://tools/record_session.gd > session.log
+rm override.cfg
+uv run tools/trailer.py session.avi session.log trailer.mp4
+```
+
+The trailer's shots, zoom targets and spotlit areas are set for these two lines and this layout;
+change the constants at the top of the script if either changes.
 
 ## Open
 

@@ -18,8 +18,7 @@ extends Node
 func decide(state: Variant, questions: Dictionary) -> Dictionary:
 	if api_key.is_empty():
 		return {"error": "no API key: set TYPESAFE_API_KEY or call Jev.configure()"}
-	var http := HTTPRequest.new()
-	http.timeout = timeout_s
+	var http := new_request(timeout_s)
 	add_child(http)
 	var err := http.request(
 		base_url.trim_suffix("/") + "/v1/systemone",
@@ -33,6 +32,15 @@ func decide(state: Variant, questions: Dictionary) -> Dictionary:
 	var completed: Array = await http.request_completed  # [result, code, headers, body]
 	http.queue_free()
 	return parse_response(completed[0], completed[1], completed[3], questions)
+
+
+## Polled on the main thread, a request advances once per frame, which added
+## about 170 ms per call at 30 fps and 45 ms at 60 fps.
+static func new_request(timeout: float) -> HTTPRequest:
+	var http := HTTPRequest.new()
+	http.timeout = timeout
+	http.use_threads = true
+	return http
 
 
 static func headers(key: String) -> PackedStringArray:

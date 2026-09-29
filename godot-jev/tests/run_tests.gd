@@ -14,6 +14,7 @@ const SUITES := [
 	"res://tests/test_transcript.gd",
 	"res://tests/test_menu.gd",
 	"res://tests/test_room_fx.gd",
+	"res://tests/test_session.gd",
 ]
 
 var failures := 0

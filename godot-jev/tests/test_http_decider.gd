@@ -35,3 +35,10 @@ func test_no_key_is_an_error_not_a_crash() -> void:
 	var out: Dictionary = await d.decide({}, QUESTIONS)
 	check(out.has("error"), "missing key returns an error")
 	d.free()
+
+
+func test_requests_poll_on_a_thread_so_the_frame_rate_does_not_add_latency() -> void:
+	var http := HttpDecider.new_request(5.0)
+	check(http.use_threads, "use_threads")
+	eq(http.timeout, 5.0, "timeout")
+	http.free()
