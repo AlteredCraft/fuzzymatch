@@ -7,6 +7,7 @@ const World := preload("res://demo/world.gd")
 const Parser := preload("res://demo/parser.gd")
 const Transcript := preload("res://demo/transcript.gd")
 const Style := preload("res://demo/style.gd")
+const RoomFx := preload("res://demo/room_fx.gd")
 const TITLE_FONT := Style.TITLE_FONT
 
 const NOT_UNDERSTOOD := [
@@ -33,6 +34,8 @@ var reveal: Tween
 var shown_art := ""
 
 var art: TextureRect
+var art_holder: Control
+var embers: CPUParticles2D
 var plaque: Label
 var exits_label: Label
 var pack_label: Label
@@ -194,12 +197,31 @@ func _refresh() -> void:
 		return
 	var first := shown_art.is_empty()
 	shown_art = art_name
-	var target := DARKNESS if world.is_dark() else Color.WHITE
 	var fade := create_tween()
 	if not first:
-		fade.tween_property(art, "modulate", Color.BLACK, 0.15)
-	fade.tween_callback(func(): art.texture = load(World.art_path(world.art())))
-	fade.tween_property(art, "modulate", target, 0.35)
+		fade.tween_method(_set_reveal, 1.0, 0.0, 0.3)
+	fade.tween_callback(_show_art.bind(world.art(), world.is_dark()))
+	fade.tween_method(_set_reveal, 0.0, 1.0, 0.45)
+
+
+## Swaps the room image while it's fully dissolved. A dark room keeps its
+## art but dimmed, and nothing burns in it.
+func _show_art(art_name: String, dark: bool) -> void:
+	var texture: Texture2D = load(World.art_path(art_name))
+	art.texture = texture
+	art.modulate = DARKNESS if dark else Color.WHITE
+	if embers:
+		embers.queue_free()
+	var pixel := minf(art_holder.size.x / texture.get_width(), art_holder.size.y / texture.get_height())
+	var sources := PackedVector2Array() if dark else RoomFx.ember_sources(texture.get_image())
+	embers = RoomFx.embers(sources, pixel)
+	embers.position = (art_holder.size - texture.get_size() * pixel) / 2.0
+	art_holder.add_child(embers)
+	art_holder.move_child(embers, art.get_index() + 1)
+
+
+func _set_reveal(amount: float) -> void:
+	(art.material as ShaderMaterial).set_shader_parameter("reveal", amount)
 
 
 func _show_decision(result: Dictionary, elapsed_ms: int, texts: Dictionary) -> void:
@@ -286,7 +308,10 @@ func _details_popup() -> PopupPanel:
 func _art_view() -> Control:
 	var holder := Control.new()
 	holder.custom_minimum_size = Vector2(640, 360)
+	holder.clip_contents = true
+	art_holder = holder
 	art = TextureRect.new()
+	art.material = RoomFx.material()
 	art.set_anchors_preset(Control.PRESET_FULL_RECT)
 	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED

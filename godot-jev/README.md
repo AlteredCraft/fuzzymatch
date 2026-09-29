@@ -60,7 +60,7 @@ the menu.
 
 | Area | What it shows |
 | --- | --- |
-| Room art (top left) | A 160×90 pixel scene for the current room, scaled 4×. It fades between rooms, drops to near-black in a dark room without light, and switches to a room's variant art once the variant's flag is set (the hall after the skeleton falls). The room's name sits on a plaque in the corner. |
+| Room art (top left) | A 160×90 pixel scene for the current room, scaled 4×. Fires flicker and shed embers, and rooms change through a dithered dissolve. It drops to near-black in a dark room without light, and switches to a room's variant art once the variant's flag is set (the hall after the skeleton falls). The room's name sits on a plaque in the corner. |
 | Status panel (bottom left) | Exits and what you're carrying, plus **Jev heard**: the latest outcome (act, clarify, unknown, or error when the API is unreachable), the action it chose, a confidence meter with ticks at the clarify (0.40) and act (0.75) thresholds, and the turn's latency. It's there to make the experiment visible while playing. |
 | Transcript (right) | Room names as headings, your commands echoed in muted text, item lines highlighted, and new text revealed a few characters at a time. Clarify options are links: click one, or type 1 or 2. |
 | Turn scores | Each command Jev answered ends with its outcome and confidence (`act 0.94`, `clarify 0.52`, `offline`). Click one to open that turn's card: what you typed, the outcome and move, confidence against the thresholds, latency, how many options were offered, API calls, the model, and the top three candidates with their probabilities. Esc or a click elsewhere closes it. |
@@ -106,12 +106,22 @@ godot --headless --path . --script res://tools/paint_rooms.gd
 ```
 
 `tools/paint_rooms.gd` draws each room in one-point perspective (brick walls, a flagstone floor
-and a vaulted ceiling), cuts doorways for the room's exits in `world.json` (north is an arch in the
-back wall; east and west are openings in the side walls; south is behind the viewer), and adds
-props from small ASCII sprites: the skeleton, braziers, sconces, skull niches, chests and the crown.
+and a vaulted ceiling with ribs carried down the walls as pilasters), cuts doorways for the room's
+exits in `world.json` (north is an arch in the back wall; east and west are passages in the side
+walls; south is behind the viewer), and adds props from small ASCII sprites and painters: the
+skeleton, braziers, sconces, banners, weapon racks, skull niches, the altar, chests and the crown.
 Lighting is computed per pixel from each room's lights and then snapped to fixed colour ramps with
 4×4 Bayer dithering, so the output stays a limited-palette pixel image rather than a smooth
-gradient.
+gradient. Lights are warm (fire) or cool (daylight, bounce): where firelight dominates, stone,
+floor and wood swap to warm twins of their ramps, with a dithered edge, so torchlight pools amber
+against cold violet shadow. Seams between walls, floor and ceiling, and the floor under props,
+are shaded darker.
+
+In the game, `demo/room_fx.gd` animates the still image with a shader. Pixels in exactly the
+flame ramp's colours step up and down that ramp, the scene brightens and dims slightly with the
+firelight, and embers rise from the brightest flame pixels. Room changes dissolve pixel by pixel
+in Bayer order. Hand-made art without those exact colours is shown as it is, with no flicker or
+embers.
 
 To use real art, replace any file with a 160×90 PNG of the same name: the room id, or the
 variant's `art` name. `test_every_room_and_variant_has_art` fails if one is missing. Dark rooms
@@ -128,11 +138,12 @@ don't need separate art; the scene dims the room's image at runtime.
 | `demo/start_menu.gd` | The start menu (the main scene) and its help page |
 | `demo/help.gd` | BBCode for the help page, and the menu's Jev status line |
 | `demo/adventure.gd` | The playable scene: art, status panel, transcript and input |
-| `demo/style.gd` | Palette, fonts, framed panels and theme shared by the menu and the game |
+| `demo/style.gd` | Palette, fonts, brass-cornered panels and theme shared by the menu and the game |
+| `demo/room_fx.gd` | Flame flicker, embers and the dissolve between rooms, for the menu and the game |
 | `demo/transcript.gd` | BBCode for the transcript; escapes all authored and typed text |
 | `demo/art/`, `demo/fonts/` | Room images and the two pixel fonts |
 | `tools/paint_rooms.gd` | Regenerates the placeholder room art |
-| `tests/` | A headless runner and 34 tests; a script error inside a test counts as a failure |
+| `tests/` | A headless runner and 40 tests; a script error inside a test counts as a failure |
 
 Using the add-on in any game:
 
