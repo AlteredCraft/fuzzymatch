@@ -50,3 +50,14 @@ func test_turn_details_list_the_top_candidates_with_their_text() -> void:
 	check(out.contains("12 options"), "options offered")
 	check(out.contains("jev-1"), "model")
 	check(out.contains("0.90") and out.contains("none of these"), "ranked candidates, with none named")
+
+
+func test_turn_details_name_the_model_without_its_calibration_flags() -> void:
+	var turn := {
+		"number": 1, "typed": "grab it", "kind": "act", "action": "take__torch", "confidence": 0.99, "ms": 450,
+		"stats": {"model": "openjev-MLX-4bit T=0.85 noul=1.829074,0.0 flags={\"perms\":1}", "offered": 6, "calls": 1, "ranked": []},
+		"texts": {},
+	}
+	var out := Transcript.turn_details(turn, 0.4, 0.75)
+	check(out.contains("openjev-MLX-4bit"), "model")
+	check(not out.contains("flags"), "no flags")

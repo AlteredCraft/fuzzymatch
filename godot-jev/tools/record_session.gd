@@ -3,10 +3,12 @@ extends SceneTree
 ##   godot --path . --write-movie session.avi --fixed-fps 30 --script res://tools/record_session.gd
 ## Rehearse the lines against Jev first, with no pauses and no video:
 ##   godot --headless --path . --script res://tools/record_session.gd -- --rehearse
-## Needs TYPESAFE_API_KEY, like the game. Exits 1 if a line didn't land.
+## Needs TYPESAFE_API_KEY, like the game, or JEV_BACKEND=openjev and an Open
+## Jev server. Exits 1 if a line didn't land.
 ## The window can be covered or minimized while it records.
 
 const Session := preload("res://tools/session.gd")
+const Help := preload("res://demo/help.gd")
 const MENU := "res://demo/start_menu.tscn"
 const ON_THE_MENU_S := 3.0
 
@@ -53,10 +55,13 @@ func _run() -> void:
 	while current_scene == menu or current_scene == null or not current_scene.is_node_ready():
 		await process_frame
 	var game: Control = current_scene
+	print(Help.status_line(root.get_node("Jev").decider))
 	var session := Session.new()
 	session.marked.connect(func(event, text): print("mark %d %s %s" % [Engine.get_process_frames(), event, text]))
 	var ok: bool = await session.play(game, speed)
 	for turn in game.turns:
 		print("%-50s %-8s %-18s %.2f %5d ms" % [turn.typed, turn.kind, turn.action, turn.confidence, turn.ms])
+	if not game.turns.is_empty():
+		print("model %s" % game.turns[0].stats.model)
 	print("session %s" % ("complete" if ok else "stopped: a line didn't land"))
 	quit(0 if ok else 1)

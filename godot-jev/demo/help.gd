@@ -38,7 +38,7 @@ static func page(clarify_at: float, act_at: float) -> String:
 		"Find your way from the collapsed stair to the vault. Say it however you like: \"set the rag on fire\", \"stab the bones\", \"use the little key on the door\".",
 		"Enter submits, ↑ and ↓ recall earlier commands. When Jev asks which move you meant, type 1 or 2, or click one.",
 		"",
-		"[color=%s]Jev needs TYPESAFE_API_KEY in the environment. Without it the game still runs, but every turn reports that the parser is offline.[/color]" % Transcript.QUIET,
+		"[color=%s]Jev needs TYPESAFE_API_KEY in the environment, or JEV_BACKEND=openjev and an Open Jev server running locally. Without either the game still runs, but every turn reports that the parser is offline.[/color]" % Transcript.QUIET,
 	])
 
 
@@ -47,7 +47,9 @@ static func status_line(decider: Object) -> String:
 	if decider == null:
 		return "Jev is offline: no decider configured"
 	if decider.get_script() == HttpDecider:
-		if decider.api_key.is_empty():
+		if decider.key_required and decider.api_key.is_empty():
 			return "Jev is offline: set TYPESAFE_API_KEY to play"
-		return "Jev is listening · model %s" % decider.model
+		if decider.model.is_empty():
+			return "Jev is listening · %s at %s" % [decider.label, decider.base_url]
+		return "Jev is listening · %s · model %s" % [decider.label, decider.model]
 	return "Jev is scripted: answers are canned, not live"

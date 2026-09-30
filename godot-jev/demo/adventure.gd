@@ -239,7 +239,7 @@ func _show_decision(result: Dictionary, elapsed_ms: int, texts: Dictionary) -> v
 			jev_heard.text = "offline"
 	meter.set_value(result.get("confidence", 0.0), Color(Transcript.KIND[kind]))
 	if kind == "error":
-		jev_detail.text = "set TYPESAFE_API_KEY"
+		jev_detail.text = "no answer: see the transcript"
 	else:
 		jev_detail.text = "confidence %.2f · %d ms" % [result.confidence, elapsed_ms]
 

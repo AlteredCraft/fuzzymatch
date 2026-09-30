@@ -131,7 +131,7 @@ don't need separate art; the scene dims the room's image at runtime.
 
 | Path | Role |
 | --- | --- |
-| `addons/jev/` | The add-on: `Jev` autoload, `http_decider.gd` (HTTPRequest to the REST API, polled on a thread), `jev_q.gd` (question builders), `scripted_decider.gd` (tests and offline play) |
+| `addons/jev/` | The add-on: `Jev` autoload (picks TypeSafe or Open Jev), `http_decider.gd` (HTTPRequest to the REST API, polled on a thread), `jev_q.gd` (question builders), `scripted_decider.gd` (tests and offline play) |
 | `demo/world.json` | The authored dungeon: 6 rooms, 5 items, 3 interactions |
 | `demo/world.gd` | Rules: possible actions, room variants, and authored responses only |
 | `demo/parser.gd` | Player text to one possible action, gated by confidence |
@@ -146,7 +146,8 @@ don't need separate art; the scene dims the room's image at runtime.
 | `tools/session.gd` | A scripted player: 16 lines that solve the dungeon, typed at a human pace |
 | `tools/record_session.gd` | Plays `session.gd` under Movie Maker to record a video, or rehearses it headless |
 | `tools/trailer.py` | Cuts a short trailer, with zooms, captions and spotlights, from a 2× recording |
-| `tests/` | A headless runner and 50 tests; a script error inside a test counts as a failure |
+| `eval/compare_backends.gd` | Asks TypeSafe Jev and Open Jev the session's lines in the same game states and compares them (`eval/compare.gd`) |
+| `tests/` | A headless runner and 62 tests; a script error inside a test counts as a failure |
 
 Using the add-on in any game:
 
@@ -176,6 +177,21 @@ the game stays fully authored, and it's fast enough to feel like a parser, not a
    2026-09-29) every turn took 197–300 ms. The HTTPRequest runs on a thread: polled on the main
    thread it only advanced once per frame, which added about 170 ms per turn at 30 fps and 45 ms
    at 60 fps.
+
+   **TypeSafe Jev and Open Jev, 2026-09-30** (`eval/compare_backends.gd --rounds 3`: the 16
+   session lines, each asked 3 times of each backend in the same state; first answer only, no
+   retries). Both landed 48 of 48 turns (45 act, 3 unknown for the gin line, no clarify) and ranked
+   the same move first on all 48.
+
+   | Backend | Served model | p50 | p95 | max |
+   | --- | --- | --- | --- | --- |
+   | TypeSafe Jev (hosted) | `jev-1.13.0` | 213 ms | 502 ms | 1144 ms |
+   | Open Jev (local, M-series Mac, MLX 4-bit) | `openjev-MLX-4bit`, shim `81a22f1b` | 600 ms | 683 ms | 716 ms |
+
+   Open Jev gave the same confidence for a line every round and its latency grew along the route,
+   from about 455 ms in the first rooms to 600–700 ms once the player carries items (more options
+   and a longer state per question). TypeSafe's median was lower, with network outliers (952 and 1144 ms).
+   Neither meets p95 ≤ 500 ms on this run; TypeSafe missed by 2 ms.
 3. **Nothing invented.** The options offered are exactly the possible actions plus `none`, for
    every state of the demo. `[pass]` by construction: `test_options_are_exactly_the_possible_actions_plus_none`.
 4. **Shippable.** An exported build works with no key in the client, through a small proxy.
@@ -191,6 +207,38 @@ godot --headless --path . --script res://tests/run_tests.gd
 
 Without a key the game still runs, but every turn reports that the parser is offline.
 
+### With Open Jev
+
+[Open Jev](https://huggingface.co/openjev) serves the same `/v1/systemone` API from your own
+machine, so the game needs no key. Start its server, then pick it with `JEV_BACKEND`:
+
+```bash
+export JEV_BACKEND=openjev            # default: typesafe
+export OPENJEV_URL=http://127.0.0.1:3002   # the default; OPENJEV_TOKEN if the server has SHIM_TOKEN
+godot --path .
+```
+
+Use `127.0.0.1`, not `localhost`: Godot tries IPv6 `::1` first without falling back, and the
+server listens on IPv4 only unless started with `--host`. The start menu names the backend. Open
+Jev answers with the model it was started with, whatever the request asks for; its full model
+string, with calibration settings, is in each response and in the comparison results.
+
+### Comparing the two
+
+```bash
+export TYPESAFE_API_KEY=sk-... TYPESAFE_DEFAULT_MODEL=jev-1.13.0   # and a running Open Jev server
+godot --headless --path . --script res://eval/compare_backends.gd -- --rounds 3
+```
+
+It walks the session route (`tools/session.gd`) by the moves each line means, so a miss by one
+backend doesn't change what either is asked next. Each line goes to both backends through the
+game's own parser and thresholds. It prints a row per line and round, then per backend how many
+lines landed (the intended move, a clarify that offers it, or `unknown` for the gin line), the
+outcome counts and p50/p95/max latency, and how often both ranked the same move first. Every row,
+with the top three candidates, goes to `eval/results-<time>.json` (gitignored; `git add -f` one
+that's evidence for a check). One untimed request to each backend first keeps a TLS handshake or
+a cold model out of the numbers.
+
 ## Recording a session
 
 `tools/session.gd` plays the dungeon from the start menu to the crown in 16 lines of Snoop Dogg
@@ -204,7 +252,8 @@ come back `unknown`. Each line names the move it means, so the session can check
   words ("go north"). A wrong move stops the session and exits 1, since the rest of the route no
   longer applies.
 
-Rehearse against the live API first (headless, no pauses), then record with Movie Maker:
+Rehearse against the live API first (headless, no pauses), then record with Movie Maker. Either
+backend works: set `JEV_BACKEND=openjev` to rehearse or record against Open Jev.
 
 ```bash
 godot --headless --path . --script res://tools/record_session.gd -- --rehearse
@@ -212,7 +261,8 @@ godot --path . --write-movie session.avi --fixed-fps 30 --script res://tools/rec
 ffmpeg -i session.avi -an -c:v libx264 -crf 18 -pix_fmt yuv420p -movflags +faststart session.mp4
 ```
 
-Both print each turn (what was typed, outcome, move, confidence, latency). A recording runs in
+Both print the backend, each turn (what was typed, outcome, move, confidence, latency) and the
+model that answered. A recording runs in
 real time, about four minutes: Movie Maker renders as fast as it can, so the script holds the game
 clock to the wall clock to keep each wait on Jev as long as it really was. The window can be
 covered or minimized. macOS stops drawing a hidden window, and Movie Maker would then repeat the

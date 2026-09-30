@@ -35,7 +35,7 @@ func test_the_menu_links_to_the_game_and_the_help_page() -> void:
 
 func test_the_help_page_explains_the_experiment() -> void:
 	var out := Help.page(0.4, 0.75)
-	for topic in ["Hypothesis", "How it works", "none of these", "Jev heard", "TYPESAFE_API_KEY"]:
+	for topic in ["Hypothesis", "How it works", "none of these", "Jev heard", "TYPESAFE_API_KEY", "JEV_BACKEND=openjev"]:
 		check(out.contains(topic), "mentions %s" % topic)
 
 
@@ -52,6 +52,14 @@ func test_the_status_line_says_whether_jev_can_answer() -> void:
 	online.api_key = "sk-test"
 	online.model = "jev-test"
 	check(Help.status_line(online).contains("jev-test"), "with a key it names the model")
+	var local := HttpDecider.new()
+	local.label = "Open Jev"
+	local.key_required = false
+	local.model = ""
+	local.base_url = "http://localhost:3002"
+	var line := Help.status_line(local)
+	check(line.contains("Open Jev") and line.contains("localhost:3002"), "Open Jev is listening without a key: " + line)
+	local.free()
 	check(Help.status_line(ScriptedDecider.new(func(_s, _q): return {})).contains("scripted"), "a scripted decider says so")
 	check(Help.status_line(null).contains("offline"), "no decider is offline")
 	offline.free()

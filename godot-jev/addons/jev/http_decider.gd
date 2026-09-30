@@ -1,5 +1,6 @@
 extends Node
-## Calls the TypeSafe System One REST API with an HTTPRequest.
+## Calls a System One REST API with an HTTPRequest: TypeSafe's, or an Open Jev
+## server, which takes the same requests.
 ##
 ## A decider is any object with `decide(state, questions) -> Dictionary`,
 ## returning `{"model": String, "answers": Dictionary}` or `{"error": String}`.
@@ -9,14 +10,16 @@ extends Node
 ## Don't ship an API key inside an exported game. For anything beyond local
 ## prototyping, point `base_url` at your own server that holds the key.
 
+@export var label := "TypeSafe Jev"
 @export var api_key := ""
+@export var key_required := true
 @export var model := "jev-latest"
 @export var base_url := "https://api.typesafe.ai"
 @export var timeout_s := 5.0
 
 
 func decide(state: Variant, questions: Dictionary) -> Dictionary:
-	if api_key.is_empty():
+	if key_required and api_key.is_empty():
 		return {"error": "no API key: set TYPESAFE_API_KEY or call Jev.configure()"}
 	var http := new_request(timeout_s)
 	add_child(http)
@@ -44,6 +47,8 @@ static func new_request(timeout: float) -> HTTPRequest:
 
 
 static func headers(key: String) -> PackedStringArray:
+	if key.is_empty():
+		return PackedStringArray(["Content-Type: application/json"])
 	return PackedStringArray(["Authorization: Bearer %s" % key, "Content-Type: application/json"])
 
 

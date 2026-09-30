@@ -84,8 +84,10 @@ static func turn_details(turn: Dictionary, clarify_at: float, act_at: float) -> 
 	if kind != "error":
 		lines.append("confidence %.2f  [color=%s](clarify ≥ %.2f, act ≥ %.2f)[/color]" % [turn.confidence, QUIET, clarify_at, act_at])
 	var cost := ["%d ms" % turn.ms, "%d options" % stats.offered, "%d call%s" % [stats.calls, "" if stats.calls == 1 else "s"]]
-	if not str(stats.model).is_empty():
-		cost.append(escape(stats.model))
+	# Open Jev's model string goes on to list its calibration settings.
+	var model := str(stats.model).get_slice(" ", 0)
+	if not model.is_empty():
+		cost.append(escape(model))
 	lines.append("[color=%s]%s[/color]" % [QUIET, " · ".join(cost)])
 	if not stats.ranked.is_empty():
 		lines.append("")

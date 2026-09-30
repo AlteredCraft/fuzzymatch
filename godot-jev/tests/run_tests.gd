@@ -8,6 +8,7 @@ extends SceneTree
 
 const SUITES := [
 	"res://tests/test_jev_q.gd",
+	"res://tests/test_jev.gd",
 	"res://tests/test_http_decider.gd",
 	"res://tests/test_world.gd",
 	"res://tests/test_parser.gd",
@@ -15,6 +16,7 @@ const SUITES := [
 	"res://tests/test_menu.gd",
 	"res://tests/test_room_fx.gd",
 	"res://tests/test_session.gd",
+	"res://tests/test_compare.gd",
 ]
 
 var failures := 0

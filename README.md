@@ -5,6 +5,10 @@ Experiments with **System One models**, starting with TypeSafe's
 but answer typed questions (a Choice, a Score, a yes/no probability) about some state, in
 milliseconds, with calibrated confidence.
 
+[Open Jev](https://huggingface.co/openjev) is an open-weights model served through the same
+`/v1/systemone` API, so it can run on your own machine without a key. godot-jev runs against either
+and compares them; the other experiments call TypeSafe's API only so far.
+
 Each directory is a standalone experiment with its own stack, a hypothesis, the checks that would
 confirm it, and tests that run without an API key. They were picked from areas that
 [awesome-jev](https://github.com/yibie/awesome-jev) had no entries for as of 2026-09-27.
@@ -12,11 +16,12 @@ confirm it, and tests that run without an API key. They were picked from areas t
 | Experiment | The idea | Stack | Status |
 | --- | --- | --- | --- |
 | [misconception-gates](misconception-gates/) | Grade a learner's free-text answer by *which misconception* it shows, and jump to the lesson section that fixes it | Node, no dependencies (drops into js-animation-sandbox) | Skeleton |
-| [godot-jev](godot-jev/) | A Godot 4 add-on for Jev, and a text adventure whose parser understands anything but can only choose moves the author wrote | Godot 4.7, GDScript | Skeleton |
+| [godot-jev](godot-jev/) | A Godot 4 add-on for Jev, and a text adventure whose parser understands anything but can only choose moves the author wrote | Godot 4.7, GDScript | Live: TypeSafe Jev and Open Jev |
 | [semver-judge](semver-judge/) | Decide the next version from the commits since the last tag, flagging only the uncertain commits that could change the answer | Python, GitHub Action | Skeleton |
 
 **Skeleton** means the design is in code and tested against scripted model answers, but nothing
-has been run against the live API yet. Each README's first Open item is that run.
+has been run against the live API yet. Each README's first Open item is that run. **Live** means
+runs against the named models are recorded, with dates, under the README's Checks.
 
 ## Shared shape
 
@@ -43,6 +48,9 @@ cd misconception-gates && node --test && node eval/run.mjs
 cd godot-jev && godot --headless --path . --import && godot --headless --path . --script res://tests/run_tests.gd
 cd semver-judge && uv sync && uv run pytest && uv run semver-judge --repo /path/to/repo
 ```
+
+godot-jev can use a local Open Jev server instead (`JEV_BACKEND=openjev`), and
+`eval/compare_backends.gd` asks both the same questions; see its README.
 
 ## Limits that apply to all of them
 

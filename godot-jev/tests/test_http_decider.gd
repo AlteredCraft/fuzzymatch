@@ -11,6 +11,7 @@ func _body(data: Variant) -> PackedByteArray:
 func test_request_body_and_headers() -> void:
 	eq(HttpDecider.request_body({"hp": 3}, QUESTIONS, "jev-1.13.0"), {"state": {"hp": 3}, "model": "jev-1.13.0", "questions": QUESTIONS})
 	eq(HttpDecider.headers("sk-x")[0], "Authorization: Bearer sk-x")
+	eq(HttpDecider.headers(""), PackedStringArray(["Content-Type: application/json"]), "no key, no Authorization header")
 
 
 func test_parses_a_good_response() -> void:
